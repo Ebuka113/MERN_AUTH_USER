@@ -1,0 +1,35 @@
+
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+
+
+@import "tailwindcss";
+
+*{
+  font-family: "Outfit", sans-serif;
+}
+
+.gradient-text {
+  font-family: 'Great Vibes', cursive;
+  font-size: 2rem;              /* Slightly bigger (~32px) */
+  font-weight: 500;             /* Light boldness */
+  letter-spacing: 0.03em;       /* Subtle spacing */
+  font-style: italic;
+  background: linear-gradient(90deg, #6a11cb, #2575fc, #ff6a00, #fbc02d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  user-select: none;
+  transition: all 0.3s ease;
+}
+
+.gradient-text:hover {
+  filter: brightness(1.08);
+  transform: scale(1.03);
+}
+
+
+
