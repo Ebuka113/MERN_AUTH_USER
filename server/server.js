@@ -1,4 +1,3 @@
-
 // ✅ Import the Express library to create the server and handle routes
 import express from "express";
 
@@ -11,12 +10,10 @@ import 'dotenv/config';  // same as: import dotenv from 'dotenv'; dotenv.config(
 // ✅ Import middleware to parse cookies from incoming requests
 import cookieParser from "cookie-parser";
 
-//for database
+// ✅ Import MongoDB connection and route handlers
 import connectDB from "./config/mongodb.js";
 import authRouter from "./routes/authRoute.js";
 import userRouter from "./routes/userRoute.js";
-
-
 
 // ✅ Create an instance of the Express application
 const app = express();
@@ -24,30 +21,50 @@ const app = express();
 // ✅ Define the port the server will run on, using environment variable or default 4000
 const port = process.env.PORT || 4000;
 
-//to invoke database 
+// ✅ Invoke the database connection function
 connectDB();
 
-//for front end link
-const allowedOrigin = ['http://localhost:5173']//the front end vite local host port
+// ✅ Define allowed origins for CORS — local frontend and deployed Vercel frontend
+const allowedOrigins = [
+  'http://localhost:5000',                   // the frontend Vite local host port
+  'https://mern-auth-user.vercel.app'        // ✅ deployed frontend URL on Vercel
+];
 
+// ✅ Middleware to handle CORS (Cross-Origin Resource Sharing)
+// - Allows requests from specified frontend origins
+// - Allows cookies or auth headers to be sent with requests
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow non-browser tools like Postman
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true); // ✅ Allow this origin
+    } else {
+      return callback(new Error('❌ Not allowed by CORS'));
+    }
+  },
+  credentials: true // ✅ Allow cookies to be sent across origins
+}));
 
 // ✅ Middleware to automatically parse incoming JSON requests (e.g., from fetch or axios)
 app.use(express.json());
+
 // ✅ Middleware to parse cookies from client requests
 app.use(cookieParser());
-// ✅ Enable CORS (Cross-Origin Resource Sharing)
-// - credentials: true allows sending cookies or auth headers from frontend
-// - you can also specify origin: 'http://localhost:3000' to restrict access
-app.use(cors({origin: allowedOrigin, credentials: true })); //this the frontend end vite local host port and cookie token applied to all the app
 
-//Api End points
+// ✅ Default test route to confirm API is working
 app.get('/', (req, res) => {
-    res.send("API working now")
+  res.send("✅ API is working now");
 });
 
-app.use('/api/auth', authRouter) //path for the url /api/auth/login or register or logout (post methods)
-app.use('/api/user', userRouter) //path for the url /api/user/data for the fetching(get method) user info like username and account verification status to user ui 
+// ✅ Authentication routes
+// path: /api/auth/login, /api/auth/register, /api/auth/logout
+app.use('/api/auth', authRouter);
 
+// ✅ User data routes
+// path: /api/user/data to fetch user info like username and verification status
+app.use('/api/user', userRouter);
+
+// ✅ Start the server on the specified port
 app.listen(port, () => {
-    console.log(`server started on PORT:${port}`)
+  console.log(`🚀 Server started on PORT: ${port}`);
 });

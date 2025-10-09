@@ -4,5 +4,11 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(),   tailwindcss(),],
+  plugins: [react(), tailwindcss()],
+
+  server: {
+    port: 5000,
+    strictPort: true,
+    allowedHosts: 'all', // allow all hosts, good for dev on Replit
+  }
 })
