@@ -151,9 +151,9 @@ export const sendVerifyOtp = async (req, res) => {
     // ✅ Save the updated user object to DB
     await user.save();
 
-    // ✅ Set up email sending options with correct 'from' format
+    // ✅ Set up email sending options
     const mailOptions = {
-      from: `"My App Name" <${process.env.SENDER_EMAIL}>`, // <-- Fixed: add name and angle brackets
+      from: process.env.SENDER_EMAIL, // Email configured in .env and SMTP
       to: user.email, // Send OTP to user's registered email
       subject: 'Account Verification OTP',
       //text: `Your OTP is ${otp}. Verify your account using this OTP.`,
@@ -171,6 +171,58 @@ export const sendVerifyOtp = async (req, res) => {
     return res.json({ success: false, message: error.message });
   }
 };
+
+
+//controller function for user to verify their account using the otp sent to their email
+export const verifyEmail = async (req, res) => {
+  try {
+    // ✅ Get userId from authenticated request (middleware)
+    const userId = req.user?.id;
+    const { otp } = req.body;
+
+    // ✅ Validate inputs
+    if (!userId || !otp) {
+      return res.json({ success: false, message: "Missing Details" });
+    }
+
+    // ✅ Find the user
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    // ✅ Validate OTP match
+    if (!user.verifyOtp || user.verifyOtp !== otp) {
+      return res.json({ success: false, message: "Invalid OTP" });
+    }
+
+    // ✅ Check if OTP is expired
+    if (user.verifyOtpExpireAt < Date.now()) {
+      return res.json({ success: false, message: "OTP expired" });
+    }
+
+    // ✅ Mark as verified
+    user.isAccountVerified = true;
+    user.verifyOtp = '';
+    user.verifyOtpExpireAt = 0;
+    await user.save();
+
+    return res.json({ success: true, message: "Email verified successfully" });
+
+  } catch (error) {
+    return res.json({ success: false, message: error.message });
+  }
+};
+
+
+//controller function user is already authenticated or not--- nb it is authenting using the middleware userAuth.js cos it also collects the emailid from the cookie token
+export const isAuthenticated = async (req, res) => {
+    try {
+        return res.json({success: true}) 
+    } catch (error) {
+       return res.json({success: false, message: error.message})  
+    }
+}
 
 //controller function to reset the user password using reset otp
 export const sendResetOtp = async (req, res) => {
@@ -197,7 +249,7 @@ export const sendResetOtp = async (req, res) => {
 
        //now to send the otp, where we want to send otp code which is on the user email
        const mailOptions = {
-            from: `"My App Name" <${process.env.SENDER_EMAIL}>`, // <-- Fixed: add name and angle brackets
+            from: process.env.SENDER_EMAIL, //the email message to be sent is coming from the email used to create the brevo smpt account, check .env file
             to: user.email, //email message to be sent is to be sent to the user who has created the account email
             subject: 'Password Reset OTP',  //the message subject to be sent
             //text: `Your OTP for resetting your password is ${otp}. Use this OTP to proceed with resetting your password.`
@@ -210,6 +262,47 @@ export const sendResetOtp = async (req, res) => {
 
     } catch (error) {
         return res.json({success: false, message: error.message})
+    }
+}
+
+//controller function where user can verify the otp and reset the password
+export const resetPassword = async (req, res) => {
+    const {email, otp, newPassword} = req.body;
+    //check if email, otp, and newPassword is not available/provided
+    if(!email || !otp || !newPassword) {
+         return res.json({success: false, message: 'Email, OTP , and new password are required'})
+    }
+
+    try {
+        //find the user using the email that is in req.body
+        const user = await userModel.findOne({email});
+        //check if user is not found
+        if(!user) {
+             return res.json({success: false, message: 'User not found'})
+        }
+        //if user is available
+        //check otp provided does not match or even if input is empty
+        if(user.resetOtp === "" || user.resetOtp !==otp) {
+             return res.json({success: false, message: 'invalid OTP'})
+        }
+        //check if otp matches but has expire
+        if(user.resetOtpExpireAt < Date.now()) {
+             return res.json({success: false, message: 'OTP Expired'})
+        }
+        //otp is not expired and otp matches, otp is valid
+        //so update the user password, we have encrypt that password inorder to store it in database 
+        const hashedPassword = await bcrypt.hash(newPassword, 10)
+        //update the new password in the database
+        user.password = hashedPassword;
+        user.resetOtp = '';
+        user.resetOtpExpireAt = 0;
+
+        await user.save()// the new password is now saved in the database
+
+         return res.json({success: true, message: 'Password has been reset successfully'})
+
+    } catch (error) {
+        return res.json({success: false, message: error.message}) 
     }
 }
 
