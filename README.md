@@ -14,7 +14,8 @@ A complete full-stack **MERN** (MongoDB, Express, React, Node.js) authentication
 
 ## 🌐 Live Demo
 
-> Coming soon...
+> 🖥️ [Frontend Live Demo](https://mern-auth-user.vercel.app/)
+> ⚙️ Backend API (https://mern-auth-user-o3wk.onrender.com/)
 
 ---
 
